@@ -197,7 +197,19 @@ The project includes Docker support for easy deployment and development.
 cp .env.example .env
 ```
 
-2. **Start services with Docker Compose**
+2. **Configure your .env file with secure credentials**
+
+**IMPORTANT**: Replace the placeholder values with strong, unique passwords:
+
+```env
+# Use strong passwords in production!
+POSTGRES_USER=your_secure_username
+POSTGRES_PASSWORD=your_secure_password_here
+POSTGRES_DB=meta_backend
+DATABASE_URL="postgresql://your_secure_username:your_secure_password_here@localhost:5432/meta_backend"
+```
+
+3. **Start services with Docker Compose**
 
 ```bash
 docker-compose up -d
@@ -207,7 +219,9 @@ This will start:
 - PostgreSQL database on port `5432`
 - Fastify API server on port `3000`
 
-3. **Run database migrations**
+**Security Note**: The `docker-compose.yml` file requires environment variables to be set. Never commit real credentials to version control.
+
+4. **Run database migrations**
 
 ```bash
 docker-compose exec app npx prisma migrate deploy --schema=./src/infrastructure/database/prisma/schema.prisma
@@ -253,22 +267,27 @@ docker-compose exec app npm run prisma:studio
 
 ### Environment Variables
 
-The following environment variables can be configured in `.env`:
+The following environment variables **must** be configured in `.env` (they are required, no defaults are provided for security):
 
 ```env
-# Database Configuration
-DATABASE_URL="postgresql://postgres:postgres@postgres:5432/meta_backend"
-
-# PostgreSQL Configuration (for Docker)
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
+# Database Configuration (REQUIRED - use strong passwords!)
+POSTGRES_USER=your_secure_username
+POSTGRES_PASSWORD=your_secure_password
 POSTGRES_DB=meta_backend
 POSTGRES_PORT=5432
+DATABASE_URL="postgresql://your_secure_username:your_secure_password@localhost:5432/meta_backend"
 
 # Application Configuration
 PORT=3000
 NODE_ENV=production
 ```
+
+**Security Best Practices**:
+- Use strong, unique passwords (minimum 16 characters, mix of letters, numbers, and symbols)
+- Never commit `.env` files to version control (already in `.gitignore`)
+- Use different credentials for development and production
+- Rotate passwords regularly
+- Consider using secrets management tools (AWS Secrets Manager, HashiCorp Vault, etc.) in production
 
 ### Production Deployment
 

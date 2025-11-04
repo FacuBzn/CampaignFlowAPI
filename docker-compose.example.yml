@@ -1,3 +1,7 @@
+# Example docker-compose.yml file
+# Copy this to docker-compose.yml and configure your environment variables in .env
+# NEVER commit docker-compose.yml with real credentials!
+
 services:
   postgres:
     image: postgres:16-alpine

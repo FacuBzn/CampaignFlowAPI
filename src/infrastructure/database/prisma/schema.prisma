@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  DELETED
+  ARCHIVED
+}
+
 model Account {
   id         String     @id @default(uuid())
   name       String
@@ -16,14 +23,17 @@ model Account {
 }
 
 model Campaign {
-  id         String    @id @default(uuid())
+  id         String          @id @default(uuid())
   name       String
-  status     String
-  spend      Float
-  budget     Float
+  status     CampaignStatus
+  spend      Decimal         @db.Decimal(10, 2)
+  budget     Decimal         @db.Decimal(10, 2)
   accountId  String
-  account    Account   @relation(fields: [accountId], references: [id])
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  account    Account         @relation(fields: [accountId], references: [id])
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([accountId])
+  @@index([status])
 }
 

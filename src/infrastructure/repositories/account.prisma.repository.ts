@@ -24,7 +24,7 @@ export class AccountPrismaRepository implements IAccountRepository {
     });
 
     return accounts.map(
-      (acc: any) => new Account(acc.id, acc.name, acc.createdAt, acc.updatedAt)
+      (acc) => new Account(acc.id, acc.name, acc.createdAt, acc.updatedAt)
     );
   }
 
@@ -79,38 +79,22 @@ export class AccountPrismaRepository implements IAccountRepository {
       );
     }
 
-    // Try to find existing account
-    const existing = await prisma.account.findUnique({
+    // Use Prisma upsert when ID is provided
+    const result = await prisma.account.upsert({
       where: { id: account.id },
+      update: { name: account.name },
+      create: {
+        id: account.id,
+        name: account.name,
+      },
     });
 
-    if (existing) {
-      // Update existing
-      const updated = await prisma.account.update({
-        where: { id: account.id },
-        data: { name: account.name },
-      });
-      return new Account(
-        updated.id,
-        updated.name,
-        updated.createdAt,
-        updated.updatedAt
-      );
-    } else {
-      // Create new with provided ID
-      const created = await prisma.account.create({
-        data: {
-          id: account.id,
-          name: account.name,
-        },
-      });
-      return new Account(
-        created.id,
-        created.name,
-        created.createdAt,
-        created.updatedAt
-      );
-    }
+    return new Account(
+      result.id,
+      result.name,
+      result.createdAt,
+      result.updatedAt
+    );
   }
 }
 

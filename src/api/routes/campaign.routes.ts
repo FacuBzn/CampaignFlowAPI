@@ -10,8 +10,12 @@ export async function campaignRoutes(server: FastifyInstance) {
       tags: ['Campaigns'],
       params: {
         type: 'object',
+        required: ['id'],
         properties: {
-          id: { type: 'string' },
+          id: {
+            type: 'string',
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+          },
         },
       },
       response: {
@@ -43,8 +47,12 @@ export async function campaignRoutes(server: FastifyInstance) {
       tags: ['Campaigns'],
       params: {
         type: 'object',
+        required: ['id'],
         properties: {
-          id: { type: 'string' },
+          id: {
+            type: 'string',
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+          },
         },
       },
       response: {

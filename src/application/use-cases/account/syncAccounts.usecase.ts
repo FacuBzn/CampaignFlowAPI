@@ -1,5 +1,5 @@
 import { IAccountRepository } from '../../../domain/repositories/account.repository';
-import { AccountPrismaRepository } from '../../../infrastructure/repositories/account.prisma.repository';
+import { DIContainer } from '../../../infrastructure/di/container';
 import { ExternalApiService } from '../../services/external-api.service';
 import { Account } from '../../../domain/entities/account.entity';
 
@@ -11,25 +11,23 @@ export class SyncAccountsUseCase {
     accountRepository?: IAccountRepository,
     externalApiService?: ExternalApiService
   ) {
-    this.accountRepository = accountRepository || new AccountPrismaRepository();
-    this.externalApiService = externalApiService || new ExternalApiService();
+    this.accountRepository = accountRepository || DIContainer.getAccountRepository();
+    this.externalApiService = externalApiService || DIContainer.getExternalApiService();
   }
 
   async execute(): Promise<Account[]> {
     // Fetch accounts from external API
     const externalAccounts = await this.externalApiService.fetchAccounts();
 
-    // Upsert each account
-    const syncedAccounts: Account[] = [];
-    for (const externalAccount of externalAccounts) {
-      const account = await this.accountRepository.upsert({
-        id: externalAccount.id,
-        name: externalAccount.name,
-      });
-      syncedAccounts.push(account);
-    }
+    // Upsert all accounts in parallel
+    const syncPromises = externalAccounts.map(account =>
+      this.accountRepository.upsert({
+        id: account.id,
+        name: account.name,
+      })
+    );
 
-    return syncedAccounts;
+    return await Promise.all(syncPromises);
   }
 }
 

@@ -1,5 +1,5 @@
 import { ICampaignRepository } from '../../../domain/repositories/campaign.repository';
-import { CampaignPrismaRepository } from '../../../infrastructure/repositories/campaign.prisma.repository';
+import { DIContainer } from '../../../infrastructure/di/container';
 import { ExternalApiService } from '../../services/external-api.service';
 import { Campaign } from '../../../domain/entities/campaign.entity';
 
@@ -11,8 +11,8 @@ export class SyncCampaignsUseCase {
     campaignRepository?: ICampaignRepository,
     externalApiService?: ExternalApiService
   ) {
-    this.campaignRepository = campaignRepository || new CampaignPrismaRepository();
-    this.externalApiService = externalApiService || new ExternalApiService();
+    this.campaignRepository = campaignRepository || DIContainer.getCampaignRepository();
+    this.externalApiService = externalApiService || DIContainer.getExternalApiService();
   }
 
   async execute(accountId: string): Promise<Campaign[]> {

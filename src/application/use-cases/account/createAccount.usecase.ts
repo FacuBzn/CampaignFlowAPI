@@ -1,12 +1,12 @@
 import { IAccountRepository } from '../../../domain/repositories/account.repository';
-import { AccountPrismaRepository } from '../../../infrastructure/repositories/account.prisma.repository';
+import { DIContainer } from '../../../infrastructure/di/container';
 import { Account } from '../../../domain/entities/account.entity';
 
 export class CreateAccountUseCase {
   private accountRepository: IAccountRepository;
 
   constructor(accountRepository?: IAccountRepository) {
-    this.accountRepository = accountRepository || new AccountPrismaRepository();
+    this.accountRepository = accountRepository || DIContainer.getAccountRepository();
   }
 
   async execute(input: { name: string }): Promise<Account> {

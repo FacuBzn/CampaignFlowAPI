@@ -1,6 +1,7 @@
 import { IAccountRepository } from '../../../domain/repositories/account.repository';
-import { AccountPrismaRepository } from '../../../infrastructure/repositories/account.prisma.repository';
+import { DIContainer } from '../../../infrastructure/di/container';
 import { SyncCampaignsUseCase } from './syncCampaigns.usecase';
+import { Campaign } from '../../../domain/entities/campaign.entity';
 
 export interface SyncAllResult {
   total: number;
@@ -21,7 +22,7 @@ export class SyncAllCampaignsUseCase {
     accountRepository?: IAccountRepository,
     syncCampaignsUseCase?: SyncCampaignsUseCase
   ) {
-    this.accountRepository = accountRepository || new AccountPrismaRepository();
+    this.accountRepository = accountRepository || DIContainer.getAccountRepository();
     this.syncCampaignsUseCase = syncCampaignsUseCase || new SyncCampaignsUseCase();
   }
 
@@ -30,7 +31,7 @@ export class SyncAllCampaignsUseCase {
     const accounts = await this.accountRepository.findAll();
 
     // Sync campaigns for all accounts concurrently
-    const syncPromises = accounts.map((account: any) =>
+    const syncPromises = accounts.map(account =>
       this.syncCampaignsUseCase.execute(account.id)
     );
 
@@ -41,7 +42,7 @@ export class SyncAllCampaignsUseCase {
     let succeeded = 0;
     let failed = 0;
 
-    results.forEach((result: PromiseSettledResult<any>, index: number) => {
+    results.forEach((result: PromiseSettledResult<Campaign[]>, index: number) => {
       const account = accounts[index];
       if (result.status === 'fulfilled') {
         succeeded++;

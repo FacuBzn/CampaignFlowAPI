@@ -26,6 +26,12 @@ export async function campaignRoutes(server: FastifyInstance) {
               },
             },
           },
+          example: {
+            data: {
+              synced: 5,
+              accountId: '123e4567-e89b-12d3-a456-426614174000',
+            },
+          },
         },
       },
     },
@@ -53,6 +59,14 @@ export async function campaignRoutes(server: FastifyInstance) {
                 totalSpend: { type: 'number' },
                 totalBudget: { type: 'number' },
               },
+            },
+          },
+          example: {
+            data: {
+              accountId: '123e4567-e89b-12d3-a456-426614174000',
+              totalCampaigns: 10,
+              totalSpend: 5000.50,
+              totalBudget: 10000.00,
             },
           },
         },
@@ -86,6 +100,30 @@ export async function campaignRoutes(server: FastifyInstance) {
                   },
                 },
               },
+            },
+          },
+          example: {
+            data: {
+              total: 3,
+              succeeded: 2,
+              failed: 1,
+              results: [
+                {
+                  accountId: '123e4567-e89b-12d3-a456-426614174000',
+                  status: 'success',
+                  error: null,
+                },
+                {
+                  accountId: '123e4567-e89b-12d3-a456-426614174001',
+                  status: 'success',
+                  error: null,
+                },
+                {
+                  accountId: '123e4567-e89b-12d3-a456-426614174002',
+                  status: 'failed',
+                  error: 'Account not found',
+                },
+              ],
             },
           },
         },

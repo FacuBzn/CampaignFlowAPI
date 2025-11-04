@@ -1,0 +1,189 @@
+{
+	"info": {
+		"_postman_id": "campaign-flow-api-collection",
+		"name": "CampaignFlowAPI",
+		"description": "Collection for CampaignFlowAPI - Clean architecture backend with Fastify, TypeScript, and Prisma",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Get Health Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check if the API is running and healthy"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Accounts",
+			"item": [
+				{
+					"name": "Get All Accounts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/accounts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"accounts"
+							]
+						},
+						"description": "Retrieve all accounts from the database"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Account",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"My Account Name\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/accounts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"accounts"
+							]
+						},
+						"description": "Create a new account"
+					},
+					"response": []
+				},
+				{
+					"name": "Sync Accounts",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/accounts/sync",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"accounts",
+								"sync"
+							]
+						},
+						"description": "Sync accounts from external Meta Ads API"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Campaigns",
+			"item": [
+				{
+					"name": "Sync Campaigns for Account",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/accounts/:id/campaigns/sync",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"accounts",
+								":id",
+								"campaigns",
+								"sync"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "account-uuid-here",
+									"description": "Account ID (UUID)"
+								}
+							]
+						},
+						"description": "Sync campaigns for a specific account"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Campaign Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/accounts/:id/campaigns/metrics",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"accounts",
+								":id",
+								"campaigns",
+								"metrics"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "account-uuid-here",
+									"description": "Account ID (UUID)"
+								}
+							]
+						},
+						"description": "Get campaign metrics for a specific account"
+					},
+					"response": []
+				},
+				{
+					"name": "Sync All Campaigns",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/sync/all",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"sync",
+								"all"
+							]
+						},
+						"description": "Sync all campaigns for all accounts concurrently"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}

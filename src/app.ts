@@ -8,7 +8,25 @@ export async function registerRoutes(server: FastifyInstance) {
   await setupSwagger(server);
 
   // Health check endpoint
-  server.get('/health', async () => {
+  server.get('/health', {
+    schema: {
+      description: 'Health check endpoint',
+      tags: ['Health'],
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            status: { type: 'string' },
+            timestamp: { type: 'string' },
+          },
+          example: {
+            status: 'ok',
+            timestamp: '2024-01-15T10:30:00.000Z',
+          },
+        },
+      },
+    },
+  }, async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
 

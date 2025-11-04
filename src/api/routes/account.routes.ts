@@ -25,6 +25,22 @@ export async function accountRoutes(server: FastifyInstance) {
               },
             },
           },
+          example: {
+            data: [
+              {
+                id: '123e4567-e89b-12d3-a456-426614174000',
+                name: 'My Account',
+                createdAt: '2024-01-15T10:30:00.000Z',
+                updatedAt: '2024-01-15T10:30:00.000Z',
+              },
+              {
+                id: '123e4567-e89b-12d3-a456-426614174001',
+                name: 'Another Account',
+                createdAt: '2024-01-16T14:20:00.000Z',
+                updatedAt: '2024-01-16T14:20:00.000Z',
+              },
+            ],
+          },
         },
       },
     },
@@ -55,6 +71,14 @@ export async function accountRoutes(server: FastifyInstance) {
               },
             },
           },
+          example: {
+            data: {
+              id: '123e4567-e89b-12d3-a456-426614174000',
+              name: 'My New Account',
+              createdAt: '2024-01-15T10:30:00.000Z',
+              updatedAt: '2024-01-15T10:30:00.000Z',
+            },
+          },
         },
       },
     },
@@ -78,6 +102,18 @@ export async function accountRoutes(server: FastifyInstance) {
                 },
               },
             },
+          },
+          example: {
+            data: [
+              {
+                id: '123e4567-e89b-12d3-a456-426614174000',
+                name: 'Synced Account 1',
+              },
+              {
+                id: '123e4567-e89b-12d3-a456-426614174001',
+                name: 'Synced Account 2',
+              },
+            ],
           },
         },
       },

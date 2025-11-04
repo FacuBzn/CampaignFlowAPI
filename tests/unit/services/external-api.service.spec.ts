@@ -12,9 +12,9 @@ describe('ExternalApiService', () => {
       getCampaigns: vi.fn(),
     } as any;
 
-    // We need to inject the mock client, but the service creates it internally
-    // So we'll test the integration with the actual client and mock axios
     service = new ExternalApiService();
+    // Replace the internal client with our mock
+    (service as any).metaApiClient = mockMetaApiClient;
   });
 
   it('should fetch accounts from external API', async () => {
@@ -23,14 +23,12 @@ describe('ExternalApiService', () => {
       { id: 'acct2', name: 'Account 2' },
     ];
 
-    // Mock the internal client by spying on the service
-    const fetchAccountsSpy = vi.spyOn(service as any, 'metaApiClient').mockImplementation({
-      getAccounts: vi.fn().mockResolvedValue(mockAccounts),
-    });
+    vi.mocked(mockMetaApiClient.getAccounts).mockResolvedValue(mockAccounts);
 
     const result = await service.fetchAccounts();
 
     expect(result).toEqual(mockAccounts);
+    expect(mockMetaApiClient.getAccounts).toHaveBeenCalledTimes(1);
   });
 
   it('should fetch campaigns with pagination', async () => {
@@ -45,14 +43,34 @@ describe('ExternalApiService', () => {
       },
     };
 
-    const fetchCampaignsSpy = vi.spyOn(service as any, 'metaApiClient').mockImplementation({
-      getCampaigns: vi.fn().mockResolvedValue(mockResponse),
-    });
+    vi.mocked(mockMetaApiClient.getCampaigns).mockResolvedValue(mockResponse);
 
     const result = await service.fetchCampaigns(accountId);
 
     expect(result.items).toEqual(mockResponse.items);
     expect(result.nextCursor).toBe('cursor-123');
+    expect(mockMetaApiClient.getCampaigns).toHaveBeenCalledWith(accountId, undefined);
+  });
+
+  it('should fetch campaigns with cursor', async () => {
+    const accountId = 'acct1';
+    const cursor = 'cursor-123';
+    const mockResponse = {
+      items: [
+        { id: 'camp-3', name: 'Campaign 3', status: 'ACTIVE', spend: 150, budget: 1500 },
+      ],
+      pagination: {
+        next_cursor: 'cursor-456',
+      },
+    };
+
+    vi.mocked(mockMetaApiClient.getCampaigns).mockResolvedValue(mockResponse);
+
+    const result = await service.fetchCampaigns(accountId, cursor);
+
+    expect(result.items).toEqual(mockResponse.items);
+    expect(result.nextCursor).toBe('cursor-456');
+    expect(mockMetaApiClient.getCampaigns).toHaveBeenCalledWith(accountId, cursor);
   });
 
   it('should handle campaigns without pagination', async () => {
@@ -64,9 +82,7 @@ describe('ExternalApiService', () => {
       pagination: undefined,
     };
 
-    const fetchCampaignsSpy = vi.spyOn(service as any, 'metaApiClient').mockImplementation({
-      getCampaigns: vi.fn().mockResolvedValue(mockResponse),
-    });
+    vi.mocked(mockMetaApiClient.getCampaigns).mockResolvedValue(mockResponse);
 
     const result = await service.fetchCampaigns(accountId);
 
@@ -81,9 +97,7 @@ describe('ExternalApiService', () => {
       pagination: undefined,
     };
 
-    const fetchCampaignsSpy = vi.spyOn(service as any, 'metaApiClient').mockImplementation({
-      getCampaigns: vi.fn().mockResolvedValue(mockResponse),
-    });
+    vi.mocked(mockMetaApiClient.getCampaigns).mockResolvedValue(mockResponse);
 
     const result = await service.fetchCampaigns(accountId);
 
@@ -94,11 +108,27 @@ describe('ExternalApiService', () => {
   it('should handle API errors', async () => {
     const error = new Error('API connection failed');
 
-    const fetchAccountsSpy = vi.spyOn(service as any, 'metaApiClient').mockImplementation({
-      getAccounts: vi.fn().mockRejectedValue(error),
-    });
+    vi.mocked(mockMetaApiClient.getAccounts).mockRejectedValue(error);
 
     await expect(service.fetchAccounts()).rejects.toThrow('API connection failed');
+    expect(mockMetaApiClient.getAccounts).toHaveBeenCalledTimes(1);
+  });
+
+  it('should handle campaigns response with empty items array', async () => {
+    const accountId = 'acct1';
+    const mockResponse = {
+      items: [],
+      pagination: {
+        next_cursor: 'cursor-123',
+      },
+    };
+
+    vi.mocked(mockMetaApiClient.getCampaigns).mockResolvedValue(mockResponse);
+
+    const result = await service.fetchCampaigns(accountId);
+
+    expect(result.items).toEqual([]);
+    expect(result.nextCursor).toBe('cursor-123');
   });
 });
 

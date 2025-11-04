@@ -231,7 +231,14 @@ This project follows Clean Architecture principles:
 3. **Infrastructure Layer**: Contains implementations (Prisma repositories, HTTP clients)
 4. **API Layer**: Contains controllers, routes, and validation schemas
 
-## License
+## 👨‍💻 Autor
 
-ISC
+**Juan Facundo Bazan Alvarez**  
+*Sr Backend Developer Node  | Software Architect*
+
+Este proyecto fue desarrollado con arquitectura hexagonal limpia, desacoplada y lista para producción.
+
+---
+
+© 2025 Juan Facundo Bazan Alvarez. Todos los derechos reservados.
 

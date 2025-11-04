@@ -1,7 +1,10 @@
 import axios, { AxiosInstance } from 'axios';
 
 const BASE_URL =
+  process.env.META_API_BASE_URL ||
   'https://w5k577bkq5cmihbdxxqlok2c7y0ejbiz.lambda-url.us-east-1.on.aws';
+
+const TIMEOUT = Number(process.env.META_API_TIMEOUT) || 30000;
 
 export interface MetaApiAccount {
   id: string;
@@ -29,7 +32,7 @@ export class MetaApiClient {
   constructor() {
     this.client = axios.create({
       baseURL: BASE_URL,
-      timeout: 30000,
+      timeout: TIMEOUT,
     });
   }
 

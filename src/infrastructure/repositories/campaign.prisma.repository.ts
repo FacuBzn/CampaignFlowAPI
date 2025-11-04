@@ -1,4 +1,4 @@
-import { ICampaignRepository } from '../../domain/repositories/campaign.repository';
+import { ICampaignRepository, CampaignMetrics } from '../../domain/repositories/campaign.repository';
 import { Campaign } from '../../domain/entities/campaign.entity';
 import { prisma } from '../database/prisma/prismaClient';
 
@@ -18,8 +18,12 @@ export class CampaignPrismaRepository implements ICampaignRepository {
       created.id,
       created.name,
       created.status,
-      created.spend,
-      created.budget,
+      typeof created.spend === 'object' && 'toNumber' in created.spend
+        ? created.spend.toNumber()
+        : Number(created.spend),
+      typeof created.budget === 'object' && 'toNumber' in created.budget
+        ? created.budget.toNumber()
+        : Number(created.budget),
       created.accountId,
       created.createdAt,
       created.updatedAt
@@ -32,13 +36,17 @@ export class CampaignPrismaRepository implements ICampaignRepository {
     });
 
     return campaigns.map(
-      (camp: any) =>
+      (camp) =>
         new Campaign(
           camp.id,
           camp.name,
           camp.status,
-          camp.spend,
-          camp.budget,
+          typeof camp.spend === 'object' && 'toNumber' in camp.spend
+            ? camp.spend.toNumber()
+            : Number(camp.spend),
+          typeof camp.budget === 'object' && 'toNumber' in camp.budget
+            ? camp.budget.toNumber()
+            : Number(camp.budget),
           camp.accountId,
           camp.createdAt,
           camp.updatedAt
@@ -57,8 +65,12 @@ export class CampaignPrismaRepository implements ICampaignRepository {
       campaign.id,
       campaign.name,
       campaign.status,
-      campaign.spend,
-      campaign.budget,
+      typeof campaign.spend === 'object' && 'toNumber' in campaign.spend
+        ? campaign.spend.toNumber()
+        : Number(campaign.spend),
+      typeof campaign.budget === 'object' && 'toNumber' in campaign.budget
+        ? campaign.budget.toNumber()
+        : Number(campaign.budget),
       campaign.accountId,
       campaign.createdAt,
       campaign.updatedAt
@@ -72,13 +84,17 @@ export class CampaignPrismaRepository implements ICampaignRepository {
     });
 
     return campaigns.map(
-      (camp: any) =>
+      (camp) =>
         new Campaign(
           camp.id,
           camp.name,
           camp.status,
-          camp.spend,
-          camp.budget,
+          typeof camp.spend === 'object' && 'toNumber' in camp.spend
+            ? camp.spend.toNumber()
+            : Number(camp.spend),
+          typeof camp.budget === 'object' && 'toNumber' in camp.budget
+            ? camp.budget.toNumber()
+            : Number(camp.budget),
           camp.accountId,
           camp.createdAt,
           camp.updatedAt
@@ -101,8 +117,12 @@ export class CampaignPrismaRepository implements ICampaignRepository {
       updated.id,
       updated.name,
       updated.status,
-      updated.spend,
-      updated.budget,
+      typeof updated.spend === 'object' && 'toNumber' in updated.spend
+        ? updated.spend.toNumber()
+        : Number(updated.spend),
+      typeof updated.budget === 'object' && 'toNumber' in updated.budget
+        ? updated.budget.toNumber()
+        : Number(updated.budget),
       updated.accountId,
       updated.createdAt,
       updated.updatedAt
@@ -138,63 +158,75 @@ export class CampaignPrismaRepository implements ICampaignRepository {
         created.id,
         created.name,
         created.status,
-        created.spend,
-        created.budget,
+        typeof created.spend === 'object' && 'toNumber' in created.spend
+          ? created.spend.toNumber()
+          : Number(created.spend),
+        typeof created.budget === 'object' && 'toNumber' in created.budget
+          ? created.budget.toNumber()
+          : Number(created.budget),
         created.accountId,
         created.createdAt,
         created.updatedAt
       );
     }
 
-    // Try to find existing campaign
-    const existing = await prisma.campaign.findUnique({
+    // Use Prisma upsert when ID is provided
+    const result = await prisma.campaign.upsert({
       where: { id: campaign.id },
+      update: {
+        name: campaign.name,
+        status: campaign.status,
+        spend: campaign.spend,
+        budget: campaign.budget,
+      },
+      create: {
+        id: campaign.id,
+        name: campaign.name,
+        status: campaign.status,
+        spend: campaign.spend,
+        budget: campaign.budget,
+        accountId: campaign.accountId,
+      },
     });
 
-    if (existing) {
-      // Update existing
-      const updated = await prisma.campaign.update({
-        where: { id: campaign.id },
-        data: {
-          name: campaign.name,
-          status: campaign.status,
-          spend: campaign.spend,
-          budget: campaign.budget,
-        },
-      });
-      return new Campaign(
-        updated.id,
-        updated.name,
-        updated.status,
-        updated.spend,
-        updated.budget,
-        updated.accountId,
-        updated.createdAt,
-        updated.updatedAt
-      );
-    } else {
-      // Create new with provided ID
-      const created = await prisma.campaign.create({
-        data: {
-          id: campaign.id,
-          name: campaign.name,
-          status: campaign.status,
-          spend: campaign.spend,
-          budget: campaign.budget,
-          accountId: campaign.accountId,
-        },
-      });
-      return new Campaign(
-        created.id,
-        created.name,
-        created.status,
-        created.spend,
-        created.budget,
-        created.accountId,
-        created.createdAt,
-        created.updatedAt
-      );
-    }
+    return new Campaign(
+      result.id,
+      result.name,
+      result.status,
+      typeof result.spend === 'object' && 'toNumber' in result.spend
+        ? result.spend.toNumber()
+        : Number(result.spend),
+      typeof result.budget === 'object' && 'toNumber' in result.budget
+        ? result.budget.toNumber()
+        : Number(result.budget),
+      result.accountId,
+      result.createdAt,
+      result.updatedAt
+    );
+  }
+
+  async getMetricsForAccount(accountId: string): Promise<CampaignMetrics> {
+    const result = await prisma.campaign.aggregate({
+      where: { accountId },
+      _count: { id: true },
+      _sum: {
+        spend: true,
+        budget: true,
+      },
+    });
+
+    return {
+      accountId,
+      totalCampaigns: result._count.id,
+      totalSpend:
+        result._sum.spend && typeof result._sum.spend === 'object' && 'toNumber' in result._sum.spend
+          ? result._sum.spend.toNumber()
+          : Number(result._sum.spend || 0),
+      totalBudget:
+        result._sum.budget && typeof result._sum.budget === 'object' && 'toNumber' in result._sum.budget
+          ? result._sum.budget.toNumber()
+          : Number(result._sum.budget || 0),
+    };
   }
 }
 

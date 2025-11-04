@@ -1,5 +1,12 @@
 import { Campaign } from '../entities/campaign.entity';
 
+export interface CampaignMetrics {
+  accountId: string;
+  totalCampaigns: number;
+  totalSpend: number;
+  totalBudget: number;
+}
+
 export interface ICampaignRepository {
   create(campaign: Omit<Campaign, 'id' | 'createdAt' | 'updatedAt'>): Promise<Campaign>;
   findAll(): Promise<Campaign[]>;
@@ -15,5 +22,6 @@ export interface ICampaignRepository {
     budget: number;
     accountId: string;
   }): Promise<Campaign>;
+  getMetricsForAccount(accountId: string): Promise<CampaignMetrics>;
 }
 

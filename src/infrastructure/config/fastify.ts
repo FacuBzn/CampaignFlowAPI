@@ -28,12 +28,45 @@ export async function setupSwagger(server: FastifyInstance) {
   });
 
   // Global error handler
-  server.setErrorHandler((error: any, _request: any, reply: any) => {
-    server.log.error(error);
-    reply.status(error.statusCode || 500).send({
+  interface FastifyValidationError {
+    instancePath: string;
+    schemaPath: string;
+    keyword: string;
+    params: Record<string, unknown>;
+    message?: string;
+  }
+
+  server.setErrorHandler((error: Error & { statusCode?: number; validation?: FastifyValidationError[] }, request, reply) => {
+    request.log.error(error);
+
+    // Error de validación de Fastify
+    if (error.validation) {
+      return reply.status(400).send({
+        error: {
+          message: 'Validation error',
+          details: error.validation,
+          statusCode: 400,
+        },
+      });
+    }
+
+    // Error de negocio (4xx)
+    if (error.statusCode && error.statusCode >= 400 && error.statusCode < 500) {
+      return reply.status(error.statusCode).send({
+        error: {
+          message: error.message || 'Bad Request',
+          statusCode: error.statusCode,
+        },
+      });
+    }
+
+    // Error interno (5xx)
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    return reply.status(error.statusCode || 500).send({
       error: {
-        message: error.message || 'Internal Server Error',
+        message: isDevelopment ? error.message : 'Internal Server Error',
         statusCode: error.statusCode || 500,
+        ...(isDevelopment && { stack: error.stack }),
       },
     });
   });

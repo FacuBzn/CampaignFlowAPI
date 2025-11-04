@@ -1,0 +1,42 @@
+{
+  "name": "campaign-flow-api",
+  "version": "1.0.0",
+  "description": "Clean architecture backend built with Fastify, TypeScript, and Prisma. Synchronizes Meta Ads mock accounts, campaigns, and metrics with PostgreSQL, implementing hexagonal architecture and concurrency-safe sync flows.",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "test": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration"
+  },
+  "keywords": [
+    "fastify",
+    "typescript",
+    "prisma",
+    "clean-architecture",
+    "hexagonal-architecture"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fastify": "^5.0.0",
+    "axios": "^1.7.0",
+    "@prisma/client": "^5.10.0",
+    "@fastify/swagger": "^8.9.0",
+    "@fastify/swagger-ui": "^2.1.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "tsx": "^4.0.0",
+    "prisma": "^5.10.0",
+    "@types/node": "^22.0.0",
+    "vitest": "^1.0.0",
+    "@vitest/ui": "^1.0.0"
+  }
+}
+

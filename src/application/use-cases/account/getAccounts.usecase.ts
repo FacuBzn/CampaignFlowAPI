@@ -1,6 +1,6 @@
-import { IAccountRepository } from '../../domain/repositories/account.repository';
+import { IAccountRepository } from '../../../domain/repositories/account.repository';
 import { AccountPrismaRepository } from '../../../infrastructure/repositories/account.prisma.repository';
-import { Account } from '../../domain/entities/account.entity';
+import { Account } from '../../../domain/entities/account.entity';
 
 export class GetAccountsUseCase {
   private accountRepository: IAccountRepository;

@@ -1,7 +1,7 @@
-import { ICampaignRepository } from '../../domain/repositories/campaign.repository';
+import { ICampaignRepository } from '../../../domain/repositories/campaign.repository';
 import { CampaignPrismaRepository } from '../../../infrastructure/repositories/campaign.prisma.repository';
 import { ExternalApiService } from '../../services/external-api.service';
-import { Campaign } from '../../domain/entities/campaign.entity';
+import { Campaign } from '../../../domain/entities/campaign.entity';
 
 export class SyncCampaignsUseCase {
   private campaignRepository: ICampaignRepository;

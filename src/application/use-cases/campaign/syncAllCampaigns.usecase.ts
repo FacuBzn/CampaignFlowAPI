@@ -1,4 +1,4 @@
-import { IAccountRepository } from '../../domain/repositories/account.repository';
+import { IAccountRepository } from '../../../domain/repositories/account.repository';
 import { AccountPrismaRepository } from '../../../infrastructure/repositories/account.prisma.repository';
 import { SyncCampaignsUseCase } from './syncCampaigns.usecase';
 

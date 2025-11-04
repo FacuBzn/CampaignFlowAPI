@@ -13,7 +13,7 @@ RUN npm ci
 COPY . .
 
 # Generate Prisma client
-RUN npx prisma generate
+RUN npx prisma generate --schema=./src/infrastructure/database/prisma/schema.prisma
 
 # Build TypeScript
 RUN npm run build
@@ -32,7 +32,7 @@ RUN npm ci --only=production
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/src/infrastructure/database/prisma ./src/infrastructure/database/prisma
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \

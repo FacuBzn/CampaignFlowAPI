@@ -1,7 +1,7 @@
-import { IAccountRepository } from '../../domain/repositories/account.repository';
+import { IAccountRepository } from '../../../domain/repositories/account.repository';
 import { AccountPrismaRepository } from '../../../infrastructure/repositories/account.prisma.repository';
 import { ExternalApiService } from '../../services/external-api.service';
-import { Account } from '../../domain/entities/account.entity';
+import { Account } from '../../../domain/entities/account.entity';
 
 export class SyncAccountsUseCase {
   private accountRepository: IAccountRepository;

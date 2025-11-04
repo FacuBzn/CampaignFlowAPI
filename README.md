@@ -25,8 +25,9 @@ src/
 ## Prerequisites
 
 - Node.js v22 or higher
-- PostgreSQL database
+- PostgreSQL database (v14 or higher)
 - npm or yarn
+- Docker and Docker Compose (optional, for containerized deployment)
 
 ## Setup
 
@@ -45,12 +46,38 @@ npm install
 
 3. **Configure environment variables**
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory (you can copy from `.env.example`):
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` with your database credentials. **Important**: If using Docker, use these credentials:
 
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/meta_backend"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/meta_backend"
 PORT=3000
 ```
+
+**Note**: The default Docker credentials are:
+- Username: `postgres`
+- Password: `postgres`
+- Database: `meta_backend`
+
+**Important**: Make sure PostgreSQL is running before proceeding. 
+
+**Option 1: Using Docker (Recommended for quick setup)**
+
+```bash
+# Start only PostgreSQL service
+docker-compose up -d postgres
+
+# Wait a few seconds for PostgreSQL to be ready, then continue with step 4
+```
+
+**Option 2: Install PostgreSQL locally**
+
+Install PostgreSQL v14+ and ensure the service is running, then update your `.env` with the correct connection string.
 
 4. **Setup database**
 
@@ -58,9 +85,19 @@ PORT=3000
 # Generate Prisma client
 npm run prisma:generate
 
-# Run migrations
+# Run migrations (creates database tables)
+# When prompted, enter a migration name (e.g., "init" or "initial_schema")
 npm run prisma:migrate
 ```
+
+**Note**: When running `prisma:migrate`, you'll be prompted to enter a migration name. You can use something like `init` or `initial_schema`.
+
+**If you get a connection error**, verify:
+- PostgreSQL is running: `docker-compose ps` (if using Docker)
+- The `DATABASE_URL` in `.env` matches your PostgreSQL credentials:
+  - Docker default: `postgresql://postgres:postgres@localhost:5432/meta_backend`
+  - Local PostgreSQL: Update with your actual credentials
+- The database `meta_backend` exists (Prisma will create it automatically if it doesn't exist)
 
 5. **Start development server**
 
@@ -69,6 +106,18 @@ npm run dev
 ```
 
 The server will start on `http://localhost:3000`
+
+### Production Build
+
+To build and run in production mode:
+
+```bash
+# Build the project
+npm run build
+
+# Start production server
+npm run start
+```
 
 ## API Documentation
 
@@ -161,7 +210,13 @@ This will start:
 3. **Run database migrations**
 
 ```bash
-docker-compose exec app npx prisma migrate deploy
+docker-compose exec app npx prisma migrate deploy --schema=./src/infrastructure/database/prisma/schema.prisma
+```
+
+Or use the npm script:
+
+```bash
+docker-compose exec app npm run prisma:migrate:deploy
 ```
 
 4. **Access the application**
@@ -191,6 +246,9 @@ docker-compose build
 # Execute commands in container
 docker-compose exec app npm run prisma:generate
 docker-compose exec app npm run prisma:migrate
+
+# Open Prisma Studio (database GUI)
+docker-compose exec app npm run prisma:studio
 ```
 
 ### Environment Variables
@@ -221,6 +279,82 @@ For production deployment, ensure:
 3. Configure proper database connection strings
 4. Use environment-specific `.env` files
 5. Enable proper logging and monitoring
+
+## Troubleshooting
+
+### Prisma Schema Not Found
+
+If you encounter errors about Prisma schema not being found, ensure you're using the npm scripts which include the `--schema` flag:
+
+```bash
+npm run prisma:generate
+npm run prisma:migrate
+```
+
+### Module Not Found After Build
+
+If you see `Cannot find module 'dist/main.js'` error:
+
+1. Make sure you've built the project first:
+```bash
+npm run build
+```
+
+2. Verify the `dist` folder exists and contains the compiled files
+
+### Database Connection Issues
+
+1. **Start PostgreSQL with Docker** (if not installed locally):
+```bash
+docker-compose up -d postgres
+```
+
+2. Verify your `.env` file has the correct `DATABASE_URL`. **For Docker, it should be**:
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/meta_backend"
+```
+
+**Common mistake**: If you see `Authentication failed for user 'user'`, your `.env` has incorrect credentials. Make sure you're using `postgres:postgres` (not `user:password`).
+
+3. Ensure PostgreSQL is running and accessible:
+   - Check Docker: `docker-compose ps`
+   - Check locally: `psql -U postgres -l`
+
+4. Wait a few seconds after starting PostgreSQL before running migrations
+
+### Port Already in Use
+
+If port 3000 is already in use:
+
+1. **Stop the running process**:
+   - Windows: `taskkill /F /IM node.exe` (stops all Node processes) or `netstat -ano | findstr :3000` then `taskkill /PID <pid> /F`
+   - Linux/Mac: `lsof -ti:3000 | xargs kill`
+
+2. Or change the `PORT` in your `.env` file
+
+### Prisma Migration Timeout
+
+If you get `P1002: The database server timed out`:
+
+1. **Check if another migration is running**: Close any other terminals running Prisma commands
+2. **Restart PostgreSQL**: 
+   ```bash
+   docker-compose restart postgres
+   ```
+3. **Wait a few seconds** before retrying the migration
+4. **If the problem persists**, check for locked connections:
+   ```bash
+   docker-compose exec postgres psql -U postgres -d meta_backend -c "SELECT * FROM pg_locks WHERE NOT granted;"
+   ```
+
+### Fastify Instance Already Listening Error
+
+If you see `FST_ERR_INSTANCE_ALREADY_LISTENING`:
+
+1. **Stop the server completely**: Press `Ctrl+C` in the terminal
+2. **Kill any remaining Node processes**: `taskkill /F /IM node.exe` (Windows)
+3. **Restart the server**: `npm run dev`
+4. This error usually happens when `tsx watch` restarts the server while it's still running
 
 ## Architecture
 

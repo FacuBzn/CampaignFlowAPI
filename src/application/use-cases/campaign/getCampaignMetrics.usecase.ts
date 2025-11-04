@@ -1,4 +1,4 @@
-import { ICampaignRepository } from '../../domain/repositories/campaign.repository';
+import { ICampaignRepository } from '../../../domain/repositories/campaign.repository';
 import { CampaignPrismaRepository } from '../../../infrastructure/repositories/campaign.prisma.repository';
 
 export interface CampaignMetrics {

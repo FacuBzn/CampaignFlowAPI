@@ -1,33 +1,15 @@
-import { ICampaignRepository } from '../../../domain/repositories/campaign.repository';
-import { CampaignPrismaRepository } from '../../../infrastructure/repositories/campaign.prisma.repository';
-
-export interface CampaignMetrics {
-  accountId: string;
-  totalCampaigns: number;
-  totalSpend: number;
-  totalBudget: number;
-}
+import { ICampaignRepository, CampaignMetrics } from '../../../domain/repositories/campaign.repository';
+import { DIContainer } from '../../../infrastructure/di/container';
 
 export class GetCampaignMetricsUseCase {
   private campaignRepository: ICampaignRepository;
 
   constructor(campaignRepository?: ICampaignRepository) {
-    this.campaignRepository = campaignRepository || new CampaignPrismaRepository();
+    this.campaignRepository = campaignRepository || DIContainer.getCampaignRepository();
   }
 
   async execute(accountId: string): Promise<CampaignMetrics> {
-    const campaigns = await this.campaignRepository.findByAccountId(accountId);
-
-    const totalCampaigns = campaigns.length;
-    const totalSpend = campaigns.reduce((sum: number, camp: any) => sum + camp.spend, 0);
-    const totalBudget = campaigns.reduce((sum: number, camp: any) => sum + camp.budget, 0);
-
-    return {
-      accountId,
-      totalCampaigns,
-      totalSpend,
-      totalBudget,
-    };
+    return await this.campaignRepository.getMetricsForAccount(accountId);
   }
 }
 

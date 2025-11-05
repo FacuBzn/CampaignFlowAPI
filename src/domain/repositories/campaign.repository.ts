@@ -1,4 +1,5 @@
 import { Campaign } from '../entities/campaign.entity';
+import { CampaignStatus } from '@prisma/client';
 
 export interface CampaignMetrics {
   accountId: string;
@@ -17,7 +18,7 @@ export interface ICampaignRepository {
   upsert(campaign: {
     id?: string;
     name: string;
-    status: string;
+    status: CampaignStatus | string;
     spend: number;
     budget: number;
     accountId: string;

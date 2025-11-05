@@ -2,11 +2,22 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { SyncCampaignsUseCase } from '../../application/use-cases/campaign/syncCampaigns.usecase';
 import { GetCampaignMetricsUseCase } from '../../application/use-cases/campaign/getCampaignMetrics.usecase';
 import { SyncAllCampaignsUseCase } from '../../application/use-cases/campaign/syncAllCampaigns.usecase';
+import { DIContainer } from '../../infrastructure/di/container';
 
 export class CampaignController {
-  private syncCampaignsUseCase = new SyncCampaignsUseCase();
-  private getCampaignMetricsUseCase = new GetCampaignMetricsUseCase();
-  private syncAllCampaignsUseCase = new SyncAllCampaignsUseCase();
+  private syncCampaignsUseCase: SyncCampaignsUseCase;
+  private getCampaignMetricsUseCase: GetCampaignMetricsUseCase;
+  private syncAllCampaignsUseCase: SyncAllCampaignsUseCase;
+
+  constructor(
+    syncCampaignsUseCase?: SyncCampaignsUseCase,
+    getCampaignMetricsUseCase?: GetCampaignMetricsUseCase,
+    syncAllCampaignsUseCase?: SyncAllCampaignsUseCase
+  ) {
+    this.syncCampaignsUseCase = syncCampaignsUseCase || DIContainer.getSyncCampaignsUseCase();
+    this.getCampaignMetricsUseCase = getCampaignMetricsUseCase || DIContainer.getGetCampaignMetricsUseCase();
+    this.syncAllCampaignsUseCase = syncAllCampaignsUseCase || DIContainer.getSyncAllCampaignsUseCase();
+  }
 
   async syncCampaigns(
     request: FastifyRequest<{ Params: { id: string } }>,

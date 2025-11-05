@@ -3,6 +3,12 @@ import { ICampaignRepository } from '../../domain/repositories/campaign.reposito
 import { AccountPrismaRepository } from '../repositories/account.prisma.repository';
 import { CampaignPrismaRepository } from '../repositories/campaign.prisma.repository';
 import { ExternalApiService } from '../../application/services/external-api.service';
+import { CreateAccountUseCase } from '../../application/use-cases/account/createAccount.usecase';
+import { GetAccountsUseCase } from '../../application/use-cases/account/getAccounts.usecase';
+import { SyncAccountsUseCase } from '../../application/use-cases/account/syncAccounts.usecase';
+import { SyncCampaignsUseCase } from '../../application/use-cases/campaign/syncCampaigns.usecase';
+import { GetCampaignMetricsUseCase } from '../../application/use-cases/campaign/getCampaignMetrics.usecase';
+import { SyncAllCampaignsUseCase } from '../../application/use-cases/campaign/syncAllCampaigns.usecase';
 
 export class DIContainer {
   private static accountRepository: IAccountRepository | null = null;
@@ -28,6 +34,31 @@ export class DIContainer {
       this.externalApiService = new ExternalApiService();
     }
     return this.externalApiService;
+  }
+
+  // Use case getters
+  static getCreateAccountUseCase(): CreateAccountUseCase {
+    return new CreateAccountUseCase();
+  }
+
+  static getGetAccountsUseCase(): GetAccountsUseCase {
+    return new GetAccountsUseCase();
+  }
+
+  static getSyncAccountsUseCase(): SyncAccountsUseCase {
+    return new SyncAccountsUseCase();
+  }
+
+  static getSyncCampaignsUseCase(): SyncCampaignsUseCase {
+    return new SyncCampaignsUseCase();
+  }
+
+  static getGetCampaignMetricsUseCase(): GetCampaignMetricsUseCase {
+    return new GetCampaignMetricsUseCase();
+  }
+
+  static getSyncAllCampaignsUseCase(): SyncAllCampaignsUseCase {
+    return new SyncAllCampaignsUseCase();
   }
 
   // Reset methods for testing

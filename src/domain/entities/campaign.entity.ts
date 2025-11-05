@@ -1,8 +1,10 @@
+import { CampaignStatus } from '@prisma/client';
+
 export class Campaign {
   constructor(
     private readonly _id: string,
     private readonly _name: string,
-    private readonly _status: string,
+    private readonly _status: CampaignStatus,
     private readonly _spend: number,
     private readonly _budget: number,
     private readonly _accountId: string,
@@ -18,7 +20,7 @@ export class Campaign {
     return this._name;
   }
 
-  get status(): string {
+  get status(): CampaignStatus {
     return this._status;
   }
 

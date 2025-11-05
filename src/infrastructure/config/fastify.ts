@@ -1,8 +1,38 @@
 import { FastifyInstance } from 'fastify';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
+import rateLimit from '@fastify/rate-limit';
 
 export async function setupSwagger(server: FastifyInstance) {
+  // Register rate limiting
+  await server.register(rateLimit, {
+    global: true,
+    max: 100, // Maximum number of requests
+    timeWindow: '1 minute', // Time window for rate limit
+    errorResponseBuilder: (request, context) => {
+      return {
+        error: {
+          message: 'Too many requests, please try again later',
+          statusCode: 429,
+          retryAfter: Math.round(context.ttl / 1000),
+        },
+      };
+    },
+  });
+
+  // Register rate limiting for sync endpoints (more restrictive)
+  await server.register(rateLimit, {
+    max: 10,
+    timeWindow: '1 minute',
+    prefix: '/accounts/sync',
+  });
+
+  await server.register(rateLimit, {
+    max: 5,
+    timeWindow: '1 minute',
+    prefix: '/sync/all',
+  });
+
   await server.register(fastifySwagger, {
     openapi: {
       info: {

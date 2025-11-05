@@ -13,7 +13,12 @@ export interface ICampaignRepository {
   findAll(): Promise<Campaign[]>;
   findById(id: string): Promise<Campaign | null>;
   findByAccountId(accountId: string): Promise<Campaign[]>;
-  update(id: string, campaign: Partial<Campaign>): Promise<Campaign>;
+  update(id: string, campaign: {
+    name?: string;
+    status?: CampaignStatus;
+    spend?: number;
+    budget?: number;
+  }): Promise<Campaign>;
   delete(id: string): Promise<void>;
   upsert(campaign: {
     id?: string;
@@ -23,6 +28,14 @@ export interface ICampaignRepository {
     budget: number;
     accountId: string;
   }): Promise<Campaign>;
+  upsertMany(campaigns: Array<{
+    id: string;
+    name: string;
+    status: CampaignStatus | string;
+    spend: number;
+    budget: number;
+    accountId: string;
+  }>): Promise<Campaign[]>;
   getMetricsForAccount(accountId: string): Promise<CampaignMetrics>;
 }
 

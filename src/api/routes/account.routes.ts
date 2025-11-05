@@ -6,8 +6,25 @@ export async function accountRoutes(server: FastifyInstance) {
 
   server.get('/accounts', {
     schema: {
-      description: 'Get all accounts',
+      description: 'Get all accounts with pagination and sorting',
       tags: ['Accounts'],
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', minimum: 1, maximum: 100, default: 20 },
+          offset: { type: 'number', minimum: 0, default: 0 },
+          orderBy: { 
+            type: 'string', 
+            enum: ['createdAt', 'updatedAt', 'name'],
+            default: 'createdAt'
+          },
+          orderDirection: {
+            type: 'string',
+            enum: ['asc', 'desc'],
+            default: 'desc',
+          },
+        },
+      },
       response: {
         200: {
           type: 'object',
@@ -24,6 +41,15 @@ export async function accountRoutes(server: FastifyInstance) {
                 },
               },
             },
+            pagination: {
+              type: 'object',
+              properties: {
+                total: { type: 'number' },
+                limit: { type: 'number' },
+                offset: { type: 'number' },
+                hasMore: { type: 'boolean' },
+              },
+            },
           },
           example: {
             data: [
@@ -33,13 +59,13 @@ export async function accountRoutes(server: FastifyInstance) {
                 createdAt: '2024-01-15T10:30:00.000Z',
                 updatedAt: '2024-01-15T10:30:00.000Z',
               },
-              {
-                id: '123e4567-e89b-12d3-a456-426614174001',
-                name: 'Another Account',
-                createdAt: '2024-01-16T14:20:00.000Z',
-                updatedAt: '2024-01-16T14:20:00.000Z',
-              },
             ],
+            pagination: {
+              total: 10,
+              limit: 20,
+              offset: 0,
+              hasMore: false,
+            },
           },
         },
       },

@@ -18,14 +18,35 @@ export class AccountPrismaRepository implements IAccountRepository {
     );
   }
 
-  async findAll(): Promise<Account[]> {
+  async findAll(options?: { 
+    limit?: number; 
+    offset?: number;
+    sort?: { orderBy?: 'createdAt' | 'updatedAt' | 'name'; orderDirection?: 'asc' | 'desc' };
+  }): Promise<Account[]> {
+    const orderBy = options?.sort?.orderBy || 'createdAt';
+    const orderDirection = options?.sort?.orderDirection || 'desc';
+
+    // Validar campo permitido
+    const allowedFields = ['createdAt', 'updatedAt', 'name'];
+    if (!allowedFields.includes(orderBy)) {
+      throw new Error(`Invalid orderBy field: ${orderBy}`);
+    }
+
     const accounts = await prisma.account.findMany({
-      orderBy: { createdAt: 'desc' },
+      take: options?.limit,
+      skip: options?.offset,
+      orderBy: {
+        [orderBy]: orderDirection,
+      },
     });
 
     return accounts.map(
       (acc) => new Account(acc.id, acc.name, acc.createdAt, acc.updatedAt)
     );
+  }
+
+  async count(): Promise<number> {
+    return prisma.account.count();
   }
 
   async findById(id: string): Promise<Account | null> {
@@ -43,11 +64,26 @@ export class AccountPrismaRepository implements IAccountRepository {
     );
   }
 
-  async update(id: string, account: Partial<Account>): Promise<Account> {
+  async update(id: string, account: { name: string }): Promise<Account> {
+    // Validar que el account existe
+    const existing = await prisma.account.findUnique({ where: { id } });
+    if (!existing) {
+      const { AccountNotFoundError } = await import('../../domain/errors/account-not-found.error');
+      throw new AccountNotFoundError(id);
+    }
+
+    // Validar datos
+    if (account.name && account.name.length > 255) {
+      const { ValidationError } = await import('../../domain/errors/validation.error');
+      throw new ValidationError('Name cannot exceed 255 characters', {
+        name: ['Name cannot exceed 255 characters'],
+      });
+    }
+
     const updated = await prisma.account.update({
       where: { id },
       data: {
-        name: account.name,
+        name: account.name?.trim(),
       },
     });
 

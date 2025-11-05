@@ -102,14 +102,40 @@ export class CampaignPrismaRepository implements ICampaignRepository {
     );
   }
 
-  async update(id: string, campaign: Partial<Campaign>): Promise<Campaign> {
+  async update(id: string, campaign: {
+    name?: string;
+    status?: import('@prisma/client').CampaignStatus;
+    spend?: number;
+    budget?: number;
+  }): Promise<Campaign> {
+    // Validar que existe
+    const existing = await prisma.campaign.findUnique({ where: { id } });
+    if (!existing) {
+      const { CampaignNotFoundError } = await import('../../domain/errors/campaign-not-found.error');
+      throw new CampaignNotFoundError(id);
+    }
+
+    // Validar datos
+    if (campaign.name && campaign.name.length > 255) {
+      const { ValidationError } = await import('../../domain/errors/validation.error');
+      throw new ValidationError('Name cannot exceed 255 characters');
+    }
+    if (campaign.spend !== undefined && (campaign.spend < 0 || campaign.spend > 999999999.99)) {
+      const { ValidationError } = await import('../../domain/errors/validation.error');
+      throw new ValidationError('Spend must be between 0 and 999999999.99');
+    }
+    if (campaign.budget !== undefined && (campaign.budget < 0 || campaign.budget > 999999999.99)) {
+      const { ValidationError } = await import('../../domain/errors/validation.error');
+      throw new ValidationError('Budget must be between 0 and 999999999.99');
+    }
+
     const updated = await prisma.campaign.update({
       where: { id },
       data: {
-        name: campaign.name,
-        status: campaign.status,
-        spend: campaign.spend,
-        budget: campaign.budget,
+        ...(campaign.name && { name: campaign.name.trim() }),
+        ...(campaign.status && { status: campaign.status }),
+        ...(campaign.spend !== undefined && { spend: campaign.spend }),
+        ...(campaign.budget !== undefined && { budget: campaign.budget }),
       },
     });
 
@@ -202,6 +228,59 @@ export class CampaignPrismaRepository implements ICampaignRepository {
       result.accountId,
       result.createdAt,
       result.updatedAt
+    );
+  }
+
+  async upsertMany(campaigns: Array<{
+    id: string;
+    name: string;
+    status: string;
+    spend: number;
+    budget: number;
+    accountId: string;
+  }>): Promise<Campaign[]> {
+    // Usar transacción para batch upsert
+    const results = await prisma.$transaction(
+      campaigns.map(campaign =>
+        prisma.campaign.upsert({
+          where: { id: campaign.id },
+          update: {
+            name: campaign.name,
+            status: campaign.status,
+            spend: campaign.spend,
+            budget: campaign.budget,
+          },
+          create: {
+            id: campaign.id,
+            name: campaign.name,
+            status: campaign.status,
+            spend: campaign.spend,
+            budget: campaign.budget,
+            accountId: campaign.accountId,
+          },
+        })
+      ),
+      {
+        maxWait: 10000,
+        timeout: 30000,
+      }
+    );
+
+    return results.map(result =>
+      new Campaign(
+        result.id,
+        result.name,
+        result.status,
+        typeof result.spend === 'object' && 'toNumber' in result.spend
+          ? result.spend.toNumber()
+          : Number(result.spend),
+        typeof result.budget === 'object' && 'toNumber' in result.budget
+          ? result.budget.toNumber()
+          : Number(result.budget),
+        result.accountId,
+        result.createdAt,
+        result.updatedAt
+      )
     );
   }
 

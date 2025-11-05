@@ -4,35 +4,7 @@ import fastifySwaggerUi from '@fastify/swagger-ui';
 import rateLimit from '@fastify/rate-limit';
 
 export async function setupSwagger(server: FastifyInstance) {
-  // Register rate limiting
-  await server.register(rateLimit, {
-    global: true,
-    max: 100, // Maximum number of requests
-    timeWindow: '1 minute', // Time window for rate limit
-    errorResponseBuilder: (request, context) => {
-      return {
-        error: {
-          message: 'Too many requests, please try again later',
-          statusCode: 429,
-          retryAfter: Math.round(context.ttl / 1000),
-        },
-      };
-    },
-  });
-
-  // Register rate limiting for sync endpoints (more restrictive)
-  await server.register(rateLimit, {
-    max: 10,
-    timeWindow: '1 minute',
-    prefix: '/accounts/sync',
-  });
-
-  await server.register(rateLimit, {
-    max: 5,
-    timeWindow: '1 minute',
-    prefix: '/sync/all',
-  });
-
+  // Register Swagger BEFORE rate limiting so Swagger routes are not rate-limited
   await server.register(fastifySwagger, {
     openapi: {
       info: {
@@ -55,6 +27,40 @@ export async function setupSwagger(server: FastifyInstance) {
       docExpansion: 'list',
       deepLinking: false,
     },
+  });
+
+  // Register rate limiting AFTER Swagger
+  // Swagger routes are already registered and won't be affected by global rate limit
+  await server.register(rateLimit, {
+    global: true,
+    max: 100, // Maximum number of requests
+    timeWindow: '1 minute', // Time window for rate limit
+    allowList: (request: { url: string }) => {
+      // Allow Swagger UI and health check without rate limiting
+      return request.url.startsWith('/docs') || request.url.startsWith('/health');
+    },
+    errorResponseBuilder: (_request, context) => {
+      return {
+        error: {
+          message: 'Too many requests, please try again later',
+          statusCode: 429,
+          retryAfter: Math.round(context.ttl / 1000),
+        },
+      };
+    },
+  });
+
+  // Register rate limiting for sync endpoints (more restrictive)
+  await server.register(rateLimit, {
+    max: 10,
+    timeWindow: '1 minute',
+    prefix: '/accounts/sync',
+  });
+
+  await server.register(rateLimit, {
+    max: 5,
+    timeWindow: '1 minute',
+    prefix: '/sync/all',
   });
 
   // Global error handler

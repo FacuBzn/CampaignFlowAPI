@@ -2,6 +2,7 @@ import { IAccountRepository } from '../../../domain/repositories/account.reposit
 import { DIContainer } from '../../../infrastructure/di/container';
 import { SyncCampaignsUseCase } from './syncCampaigns.usecase';
 import { Campaign } from '../../../domain/entities/campaign.entity';
+import { Account } from '../../../domain/entities/account.entity';
 
 export interface SyncAllResult {
   total: number;

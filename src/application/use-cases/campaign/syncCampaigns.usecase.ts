@@ -12,7 +12,9 @@ export class SyncCampaignsUseCase {
   private accountRepository: IAccountRepository;
   private externalApiService: ExternalApiService;
   private lockService: LockService;
-  private readonly CONCURRENCY_LIMIT = 10; // Limit concurrent upserts to avoid overwhelming the database
+
+  // Valid account IDs supported by the external API
+  private readonly VALID_EXTERNAL_ACCOUNT_IDS = ['acct1', 'acct2', 'acct3', 'acct4', 'acct5'];
 
   constructor(
     campaignRepository?: ICampaignRepository,
@@ -49,11 +51,28 @@ export class SyncCampaignsUseCase {
   }
 
   async execute(accountId: string): Promise<Campaign[]> {
+    // Validate that the account ID is valid for the external API
+    // The external API only supports these 5 predefined account IDs
+    if (!this.VALID_EXTERNAL_ACCOUNT_IDS.includes(accountId)) {
+      throw new ValidationError(
+        `Account ID "${accountId}" is not valid for external API synchronization. ` +
+        `Only accounts synchronized from the external API can sync campaigns. ` +
+        `Valid account IDs are: ${this.VALID_EXTERNAL_ACCOUNT_IDS.join(', ')}. ` +
+        `Please sync accounts first using POST /accounts/sync, then use one of the synced account IDs.`,
+        {
+          accountId: [
+            `Account ID must be one of: ${this.VALID_EXTERNAL_ACCOUNT_IDS.join(', ')}`,
+            'Only accounts synchronized from the external API can sync campaigns',
+          ],
+        }
+      );
+    }
+
     // Adquirir lock para prevenir sincronizaciones concurrentes
     const releaseLock = await this.lockService.acquireLock(accountId, 300000); // 5 minutos
 
     try {
-      // Validate account exists before syncing campaigns
+      // Validate account exists in database before syncing campaigns
       const account = await this.accountRepository.findById(accountId);
       if (!account) {
         throw new AccountNotFoundError(accountId);

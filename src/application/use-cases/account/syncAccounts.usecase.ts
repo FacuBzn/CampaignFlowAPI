@@ -1,18 +1,12 @@
-import { IAccountRepository } from '../../../domain/repositories/account.repository';
 import { DIContainer } from '../../../infrastructure/di/container';
 import { ExternalApiService } from '../../services/external-api.service';
 import { Account } from '../../../domain/entities/account.entity';
 import { prisma } from '../../../infrastructure/database/prisma/prismaClient';
 
 export class SyncAccountsUseCase {
-  private accountRepository: IAccountRepository;
   private externalApiService: ExternalApiService;
 
-  constructor(
-    accountRepository?: IAccountRepository,
-    externalApiService?: ExternalApiService
-  ) {
-    this.accountRepository = accountRepository || DIContainer.getAccountRepository();
+  constructor(externalApiService?: ExternalApiService) {
     this.externalApiService = externalApiService || DIContainer.getExternalApiService();
   }
 
@@ -22,16 +16,20 @@ export class SyncAccountsUseCase {
 
     // Usar transacción Prisma directamente para asegurar atomicidad
     const results = await prisma.$transaction(
-      externalAccounts.map(account =>
-        prisma.account.upsert({
-          where: { id: account.id },
-          update: { name: account.name },
-          create: {
-            id: account.id,
-            name: account.name,
-          },
-        })
-      ),
+      async (tx) => {
+        return Promise.all(
+          externalAccounts.map(account =>
+            tx.account.upsert({
+              where: { id: account.id },
+              update: { name: account.name },
+              create: {
+                id: account.id,
+                name: account.name,
+              },
+            })
+          )
+        );
+      },
       {
         maxWait: 5000,
         timeout: 10000,

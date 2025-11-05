@@ -25,6 +25,7 @@ export interface MetaApiResponse<T> {
   items: T[];
   pagination?: {
     next_cursor?: string;
+    previous_cursor?: string;
   };
 }
 
@@ -53,7 +54,7 @@ export class MetaApiClient {
                error.code === 'ENOTFOUND' || 
                error.code === 'ECONNREFUSED';
       },
-      onRetry: (retryCount, error, requestConfig) => {
+      onRetry: (retryCount, _error, requestConfig) => {
         console.log(`Retry attempt ${retryCount} for ${requestConfig.url}`);
       },
     });
@@ -92,8 +93,10 @@ export class MetaApiClient {
       
       // 4xx - Client errors (no retryable)
       if (status >= 400 && status < 500) {
+        const url = error.config?.url || 'unknown';
+        const fullUrl = `${error.config?.baseURL || BASE_URL}${url}`;
         return new ExternalApiError(
-          `External API returned ${status}: ${error.response.statusText}`,
+          `External API returned ${status}: ${error.response.statusText}. Endpoint: ${fullUrl}`,
           error,
           false // Not retryable
         );
@@ -126,24 +129,34 @@ export class MetaApiClient {
     );
   }
 
+  /**
+   * Returns the predefined account IDs supported by the external API.
+   * The API does not expose an endpoint to list accounts, only to get campaigns by account_id.
+   * According to the API documentation, there are 5 predefined accounts: acct1, acct2, acct3, acct4, acct5
+   */
   async getAccounts(): Promise<MetaApiAccount[]> {
-    try {
-      const response = await this.client.get<MetaApiResponse<MetaApiAccount>>('');
-      return response.data.items || [];
-    } catch (error) {
-      // Error ya está transformado por interceptor
-      throw error;
-    }
+    // The external API does not have an endpoint to list accounts.
+    // According to the documentation, there are 5 predefined accounts with IDs: acct1, acct2, acct3, acct4, acct5
+    const predefinedAccountIds = ['acct1', 'acct2', 'acct3', 'acct4', 'acct5'];
+    
+    return predefinedAccountIds.map(id => ({
+      id,
+      name: `Account ${id.replace('acct', '')}`, // Generate a default name based on ID
+    }));
   }
 
+  /**
+   * Gets campaigns for a specific account ID with optional cursor for pagination.
+   * Endpoint: GET ?account_id={acct_id}&cursor={cursor}
+   * 
+   * @param accountId - The account ID (must be one of: acct1, acct2, acct3, acct4, acct5)
+   * @param cursor - Optional cursor for pagination
+   * @returns Campaigns with pagination info
+   */
   async getCampaigns(accountId: string, cursor?: string): Promise<MetaApiResponse<MetaApiCampaign>> {
-    try {
-      const url = `?account_id=${accountId}${cursor ? `&cursor=${cursor}` : ''}`;
-      const response = await this.client.get<MetaApiResponse<MetaApiCampaign>>(url);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const url = `?account_id=${accountId}${cursor ? `&cursor=${cursor}` : ''}`;
+    const response = await this.client.get<MetaApiResponse<MetaApiCampaign>>(url);
+    return response.data;
   }
 }
 

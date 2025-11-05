@@ -95,13 +95,23 @@ export class AccountController {
 
     // Si es AppError, usar su statusCode
     if (error instanceof AppError) {
+      const errorResponse: {
+        message: string;
+        code: string;
+        statusCode: number;
+        details?: unknown;
+      } = {
+        message: error.message,
+        code: error.code,
+        statusCode: error.statusCode,
+      };
+      
+      if (error.details) {
+        errorResponse.details = error.details;
+      }
+      
       return reply.status(error.statusCode).send({
-        error: {
-          message: error.message,
-          code: error.code,
-          statusCode: error.statusCode,
-          ...(error.details && { details: error.details }),
-        },
+        error: errorResponse,
       });
     }
 

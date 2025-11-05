@@ -14,7 +14,8 @@ export async function campaignRoutes(server: FastifyInstance) {
         properties: {
           id: {
             type: 'string',
-            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+            // Accepts UUIDs or external API account IDs (acct1-acct5)
+            pattern: '^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|acct[1-5])$',
           },
         },
       },
@@ -51,7 +52,8 @@ export async function campaignRoutes(server: FastifyInstance) {
         properties: {
           id: {
             type: 'string',
-            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+            // Accepts UUIDs or external API account IDs (acct1-acct5)
+            pattern: '^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|acct[1-5])$',
           },
         },
       },

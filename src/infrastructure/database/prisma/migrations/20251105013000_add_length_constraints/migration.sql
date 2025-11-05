@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Account" ALTER COLUMN "name" SET DATA TYPE VARCHAR(255);
+
+-- AlterTable
+ALTER TABLE "Campaign" ALTER COLUMN "name" SET DATA TYPE VARCHAR(255);
+

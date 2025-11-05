@@ -1,6 +1,7 @@
 import { ICampaignRepository, CampaignMetrics } from '../../domain/repositories/campaign.repository';
 import { Campaign } from '../../domain/entities/campaign.entity';
 import { prisma } from '../database/prisma/prismaClient';
+import { CampaignStatus } from '@prisma/client';
 
 export class CampaignPrismaRepository implements ICampaignRepository {
   async create(campaign: Omit<Campaign, 'id' | 'createdAt' | 'updatedAt'>): Promise<Campaign> {
@@ -174,7 +175,7 @@ export class CampaignPrismaRepository implements ICampaignRepository {
       const created = await prisma.campaign.create({
         data: {
           name: campaign.name,
-          status: campaign.status,
+          status: campaign.status as CampaignStatus,
           spend: campaign.spend,
           budget: campaign.budget,
           accountId: campaign.accountId,
@@ -201,14 +202,14 @@ export class CampaignPrismaRepository implements ICampaignRepository {
       where: { id: campaign.id },
       update: {
         name: campaign.name,
-        status: campaign.status,
+        status: campaign.status as CampaignStatus,
         spend: campaign.spend,
         budget: campaign.budget,
       },
       create: {
         id: campaign.id,
         name: campaign.name,
-        status: campaign.status,
+        status: campaign.status as CampaignStatus,
         spend: campaign.spend,
         budget: campaign.budget,
         accountId: campaign.accountId,
@@ -241,25 +242,29 @@ export class CampaignPrismaRepository implements ICampaignRepository {
   }>): Promise<Campaign[]> {
     // Usar transacción para batch upsert
     const results = await prisma.$transaction(
-      campaigns.map(campaign =>
-        prisma.campaign.upsert({
-          where: { id: campaign.id },
-          update: {
-            name: campaign.name,
-            status: campaign.status,
-            spend: campaign.spend,
-            budget: campaign.budget,
-          },
-          create: {
-            id: campaign.id,
-            name: campaign.name,
-            status: campaign.status,
-            spend: campaign.spend,
-            budget: campaign.budget,
-            accountId: campaign.accountId,
-          },
-        })
-      ),
+      async (tx) => {
+        return Promise.all(
+          campaigns.map(campaign =>
+            tx.campaign.upsert({
+              where: { id: campaign.id },
+              update: {
+                name: campaign.name,
+                status: campaign.status as CampaignStatus,
+                spend: campaign.spend,
+                budget: campaign.budget,
+              },
+              create: {
+                id: campaign.id,
+                name: campaign.name,
+                status: campaign.status as CampaignStatus,
+                spend: campaign.spend,
+                budget: campaign.budget,
+                accountId: campaign.accountId,
+              },
+            })
+          )
+        );
+      },
       {
         maxWait: 10000,
         timeout: 30000,

@@ -29,83 +29,112 @@ src/
 - npm or yarn
 - Docker and Docker Compose (optional, for containerized deployment)
 
-## Setup
+## 🚀 Setup Local
 
-1. **Clone the repository**
+### Paso a Paso para Ejecutar Localmente
+
+#### 1. **Clonar el Repositorio**
 
 ```bash
 git clone <repository-url>
-cd campaign-flow-api
+cd CampaignFlowAPI
 ```
 
-2. **Install dependencies**
+#### 2. **Instalar Dependencias**
 
 ```bash
 npm install
 ```
 
-3. **Configure environment variables**
+#### 3. **Configurar Variables de Entorno**
 
-Create a `.env` file in the root directory (you can copy from `.env.example`):
-
-```bash
-cp .env.example .env
-```
-
-Then edit `.env` with your database credentials. **Important**: If using Docker, use these credentials:
+Crea un archivo `.env` en la raíz del proyecto con las siguientes variables:
 
 ```env
+# Database Configuration
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/meta_backend"
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=meta_backend
+POSTGRES_PORT=5432
+
+# Application Configuration
 PORT=3000
+NODE_ENV=development
+
+# External API Configuration
+META_API_BASE_URL=https://w5k577bkq5cmihbdxxqlok2c7y0ejbiz.lambda-url.us-east-1.on.aws
+META_API_TIMEOUT=30000
+META_API_RETRY_ATTEMPTS=3
+
+# Sync Configuration
+SYNC_ALL_TIMEOUT=300000
 ```
 
-**Note**: The default Docker credentials are:
-- Username: `postgres`
-- Password: `postgres`
-- Database: `meta_backend`
+**Nota**: Si usas Docker Compose, las credenciales por defecto son `postgres:postgres`.
 
-**Important**: Make sure PostgreSQL is running before proceeding. 
+#### 4. **Iniciar PostgreSQL**
 
-**Option 1: Using Docker (Recommended for quick setup)**
+**Opción A: Usando Docker (Recomendado)**
 
 ```bash
-# Start only PostgreSQL service
+# Iniciar solo PostgreSQL
 docker-compose up -d postgres
 
-# Wait a few seconds for PostgreSQL to be ready, then continue with step 4
+# Verificar que está corriendo
+docker-compose ps
+
+# Esperar unos segundos para que PostgreSQL esté listo
 ```
 
-**Option 2: Install PostgreSQL locally**
+**Opción B: PostgreSQL Local**
 
-Install PostgreSQL v14+ and ensure the service is running, then update your `.env` with the correct connection string.
+Asegúrate de tener PostgreSQL v14+ instalado y corriendo localmente, luego actualiza `DATABASE_URL` en `.env` con tus credenciales.
 
-4. **Setup database**
+#### 5. **Configurar Base de Datos**
 
 ```bash
-# Generate Prisma client
+# Generar Prisma Client
 npm run prisma:generate
 
-# Run migrations (creates database tables)
-# When prompted, enter a migration name (e.g., "init" or "initial_schema")
+# Ejecutar migraciones (crea las tablas)
 npm run prisma:migrate
 ```
 
-**Note**: When running `prisma:migrate`, you'll be prompted to enter a migration name. You can use something like `init` or `initial_schema`.
+**Nota**: Cuando ejecutes `prisma:migrate`, se te pedirá un nombre para la migración. Puedes usar `init` o `initial_schema`.
 
-**If you get a connection error**, verify:
-- PostgreSQL is running: `docker-compose ps` (if using Docker)
-- The `DATABASE_URL` in `.env` matches your PostgreSQL credentials:
-  - Docker default: `postgresql://postgres:postgres@localhost:5432/meta_backend`
-  - Local PostgreSQL: Update with your actual credentials
-- The database `meta_backend` exists (Prisma will create it automatically if it doesn't exist)
+**Si hay errores de conexión**, verifica:
+- PostgreSQL está corriendo: `docker-compose ps` (si usas Docker)
+- `DATABASE_URL` en `.env` coincide con tus credenciales
+- La base de datos `meta_backend` existe (Prisma la crea automáticamente si no existe)
 
-5. **Start development server**
+#### 6. **Iniciar Servidor de Desarrollo**
 
 ```bash
 npm run dev
 ```
 
-The server will start on `http://localhost:3000`
+El servidor estará disponible en `http://localhost:3000`
+
+#### 7. **Verificar que Funciona**
+
+```bash
+# Health check
+curl http://localhost:3000/health
+
+# Deberías recibir:
+# {
+#   "status": "ok",
+#   "timestamp": "...",
+#   "database": { "status": "connected" }
+# }
+```
+
+#### 8. **Acceder a Documentación**
+
+Abre tu navegador en: `http://localhost:3000/docs`
+
+Swagger UI te permitirá probar todos los endpoints interactivamente.
 
 ### Production Build
 
@@ -375,14 +404,164 @@ If you see `FST_ERR_INSTANCE_ALREADY_LISTENING`:
 3. **Restart the server**: `npm run dev`
 4. This error usually happens when `tsx watch` restarts the server while it's still running
 
-## Architecture
+## 🏗️ Arquitectura y Decisiones Técnicas
 
-This project follows Clean Architecture principles:
+### Arquitectura Hexagonal (Clean Architecture)
 
-1. **Domain Layer**: Contains business entities and repository interfaces
-2. **Application Layer**: Contains use cases and application services
-3. **Infrastructure Layer**: Contains implementations (Prisma repositories, HTTP clients)
-4. **API Layer**: Contains controllers, routes, and validation schemas
+Este proyecto implementa **Hexagonal Architecture** (también conocida como Ports & Adapters), separando el dominio del negocio de los detalles de implementación.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    API Layer (Fastify)                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │ Controllers  │  │   Routes     │  │   Schemas    │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  │
+└─────────────────────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│              Application Layer (Use Cases)              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │ SyncAccounts │  │SyncCampaigns │  │ GetMetrics   │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  │
+└─────────────────────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│                Domain Layer (Core)                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │  Entities    │  │ Repositories │  │    Errors    │  │
+│  │  (Interfaces)│  │ (Interfaces) │  │  (Custom)    │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  │
+└─────────────────────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│           Infrastructure Layer (Adapters)                │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │   Prisma     │  │ HTTP Client  │  │   Config     │  │
+│  │ Repositories │  │ (Meta API)   │  │ (Fastify)    │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Decisiones Técnicas Principales
+
+#### 1. **Fastify en lugar de Express**
+
+**¿Por qué Fastify?**
+- **Performance**: Fastify es significativamente más rápido que Express (2-3x en benchmarks)
+- **TypeScript First**: Mejor soporte nativo para TypeScript
+- **Schema Validation**: Validación automática de schemas JSON con JSON Schema
+- **Plugin System**: Arquitectura de plugins más robusta y modular
+- **Logging**: Pino integrado para logging estructurado de alta performance
+
+**Trade-offs**: 
+- Menor ecosistema que Express (pero suficiente para este proyecto)
+- Curva de aprendizaje ligeramente mayor
+
+#### 2. **Prisma en lugar de TypeORM/Sequelize**
+
+**¿Por qué Prisma?**
+- **Type Safety**: Genera tipos TypeScript automáticamente desde el schema
+- **Developer Experience**: Migraciones automáticas, Prisma Studio, mejor DX
+- **Performance**: Query builder optimizado, conexiones eficientes
+- **Schema como Single Source of Truth**: Un solo archivo define estructura y tipos
+- **Moderno**: Sintaxis intuitiva, menos boilerplate
+
+**Trade-offs**:
+- Menos flexible que TypeORM para queries complejas (pero suficiente para este caso)
+- Learning curve para developers no familiarizados
+
+#### 3. **Arquitectura Hexagonal**
+
+**¿Por qué esta arquitectura?**
+- **Testabilidad**: Cada capa puede testearse independientemente
+- **Mantenibilidad**: Cambios en infraestructura no afectan lógica de negocio
+- **Escalabilidad**: Fácil agregar nuevos adaptadores (REST, GraphQL, gRPC)
+- **Desacoplamiento**: El dominio no depende de frameworks externos
+- **Clean Code**: Separación clara de responsabilidades
+
+**Trade-offs**:
+- Más archivos y estructura inicial (pero vale la pena para proyectos grandes)
+- Requiere más disciplina del equipo
+
+#### 4. **TypeScript Strict Mode**
+
+**¿Por qué TypeScript?**
+- **Type Safety**: Detecta errores en tiempo de compilación
+- **Autocomplete**: Mejor experiencia de desarrollo con IDE
+- **Refactoring Seguro**: Cambios masivos con confianza
+- **Documentación Implícita**: Los tipos documentan el código
+
+#### 5. **Dependency Injection Manual (DIContainer)**
+
+**¿Por qué DI manual en lugar de librería (InversifyJS, TSyringe)?**
+- **Simplicidad**: No necesitamos decoradores complejos para este proyecto
+- **Control Total**: Sabemos exactamente qué se está inyectando
+- **Menos Dependencias**: Menos librerías externas
+- **Suficiente**: Para el tamaño del proyecto, DI manual es suficiente
+
+**Trade-offs**:
+- Si el proyecto crece mucho, podría beneficiarse de una librería DI
+- Más código manual para mantener
+
+#### 6. **Zod para Validación**
+
+**¿Por qué Zod?**
+- **Type Inference**: Genera tipos TypeScript desde schemas
+- **Runtime Validation**: Valida datos en runtime, no solo en compile-time
+- **Composable**: Schemas pueden combinarse y reutilizarse
+- **Mensajes de Error**: Mensajes claros y útiles
+- **Lightweight**: Librería pequeña y rápida
+
+#### 7. **Axios con Retry Logic**
+
+**¿Por qué Axios + axios-retry?**
+- **Retry Automático**: Reintenta automáticamente en errores transitorios
+- **Exponential Backoff**: Evita sobrecargar API externa
+- **Interceptors**: Facilita manejo centralizado de errores
+- **TypeScript Support**: Buen soporte para TypeScript
+
+#### 8. **In-Memory Locks (LockService)**
+
+**¿Por qué locks in-memory en lugar de Redis?**
+- **Simplicidad**: No requiere infraestructura adicional para desarrollo
+- **Suficiente**: Para una sola instancia, funciona perfectamente
+- **Extensible**: Fácil migrar a Redis cuando se necesite escalar horizontalmente
+
+**Trade-off**: 
+- No funciona en múltiples instancias (pero se documenta cómo migrar a Redis)
+
+#### 9. **Decimal en lugar de Float para Moneda**
+
+**¿Por qué Decimal?**
+- **Precisión**: Float tiene problemas de precisión con decimales (0.1 + 0.2 ≠ 0.3)
+- **Moneda**: Para valores monetarios, precisión es crítica
+- **Prisma Support**: Prisma soporta Decimal nativamente
+
+**Trade-off**: 
+- Ligeramente más verboso en código (necesita `.toNumber()`)
+
+#### 10. **Vitest en lugar de Jest**
+
+**¿Por qué Vitest?**
+- **Velocidad**: Más rápido que Jest
+- **TypeScript Native**: Mejor integración con TypeScript
+- **Compatible con Jest API**: Fácil migración si alguien viene de Jest
+- **Ecosystem**: Compatible con herramientas de Jest
+
+### Patrones de Diseño Implementados
+
+1. **Repository Pattern**: Abstrae acceso a datos, permite cambiar ORM sin afectar lógica
+2. **Use Case Pattern**: Encapsula operaciones de negocio específicas
+3. **Dependency Injection**: Facilita testing y desacoplamiento
+4. **Strategy Pattern**: LockService puede cambiar implementación (memory → Redis)
+5. **Error Handling con Clases**: Jerarquía de errores para manejo consistente
+
+### Estructura de Capas
+
+1. **Domain Layer** (`src/domain/`): Entidades, interfaces de repositorios, errores personalizados
+2. **Application Layer** (`src/application/`): Casos de uso, servicios de aplicación
+3. **Infrastructure Layer** (`src/infrastructure/`): Implementaciones (Prisma, HTTP, config)
+4. **API Layer** (`src/api/`): Controladores, rutas, validación de schemas
 
 ## 👨‍💻 Autor
 

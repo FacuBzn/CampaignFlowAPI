@@ -2,8 +2,9 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { CreateAccountUseCase } from '../../application/use-cases/account/createAccount.usecase';
 import { GetAccountsUseCase } from '../../application/use-cases/account/getAccounts.usecase';
 import { SyncAccountsUseCase } from '../../application/use-cases/account/syncAccounts.usecase';
-import { createAccountSchema } from '../schemas/account.schema';
+import { createAccountSchema, paginationQuerySchema, sortQuerySchema } from '../schemas/account.schema';
 import { DIContainer } from '../../infrastructure/di/container';
+import { AppError } from '../../domain/errors/base.error';
 
 export class AccountController {
   private getAccountsUseCase: GetAccountsUseCase;
@@ -20,13 +21,37 @@ export class AccountController {
     this.syncAccountsUseCase = syncAccountsUseCase || DIContainer.getSyncAccountsUseCase();
   }
 
-  async getAll(request: FastifyRequest, reply: FastifyReply) {
+  async getAll(
+    request: FastifyRequest<{ 
+      Querystring: { 
+        limit?: string; 
+        offset?: string;
+        orderBy?: string;
+        orderDirection?: string;
+      } 
+    }>, 
+    reply: FastifyReply
+  ) {
     try {
-      const accounts = await this.getAccountsUseCase.execute();
-      return reply.send({ data: accounts });
+      const query = paginationQuerySchema.merge(sortQuerySchema).parse({
+        limit: request.query.limit,
+        offset: request.query.offset,
+        orderBy: request.query.orderBy,
+        orderDirection: request.query.orderDirection,
+      });
+
+      const result = await this.getAccountsUseCase.execute({
+        limit: query.limit,
+        offset: query.offset,
+        sort: {
+          orderBy: query.orderBy,
+          orderDirection: query.orderDirection,
+        },
+      });
+
+      return reply.send(result);
     } catch (error) {
-      request.log.error(error);
-      return reply.status(500).send({ error: 'Failed to get accounts' });
+      return this.handleError(error, request, reply, 'Failed to get accounts');
     }
   }
 
@@ -37,7 +62,6 @@ export class AccountController {
       const account = await this.createAccountUseCase.execute(validatedInput);
       return reply.code(201).send({ data: account });
     } catch (error) {
-      request.log.error(error);
       // Handle Zod validation errors
       if (error && typeof error === 'object' && 'issues' in error) {
         return reply.status(400).send({
@@ -48,7 +72,7 @@ export class AccountController {
           },
         });
       }
-      return reply.status(500).send({ error: 'Failed to create account' });
+      return this.handleError(error, request, reply, 'Failed to create account');
     }
   }
 
@@ -57,9 +81,37 @@ export class AccountController {
       const accounts = await this.syncAccountsUseCase.execute();
       return reply.send({ data: accounts });
     } catch (error) {
-      request.log.error(error);
-      return reply.status(500).send({ error: 'Failed to sync accounts' });
+      return this.handleError(error, request, reply, 'Failed to sync accounts');
     }
+  }
+
+  private handleError(
+    error: unknown,
+    request: FastifyRequest,
+    reply: FastifyReply,
+    defaultMessage: string
+  ) {
+    request.log.error({ err: error }, 'Controller error');
+
+    // Si es AppError, usar su statusCode
+    if (error instanceof AppError) {
+      return reply.status(error.statusCode).send({
+        error: {
+          message: error.message,
+          code: error.code,
+          statusCode: error.statusCode,
+          ...(error.details && { details: error.details }),
+        },
+      });
+    }
+
+    // Error desconocido - 500
+    return reply.status(500).send({
+      error: {
+        message: defaultMessage,
+        statusCode: 500,
+      },
+    });
   }
 }
 

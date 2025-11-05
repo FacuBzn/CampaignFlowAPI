@@ -3,6 +3,7 @@ import { SyncCampaignsUseCase } from '../../application/use-cases/campaign/syncC
 import { GetCampaignMetricsUseCase } from '../../application/use-cases/campaign/getCampaignMetrics.usecase';
 import { SyncAllCampaignsUseCase } from '../../application/use-cases/campaign/syncAllCampaigns.usecase';
 import { DIContainer } from '../../infrastructure/di/container';
+import { AppError } from '../../domain/errors/base.error';
 
 export class CampaignController {
   private syncCampaignsUseCase: SyncCampaignsUseCase;
@@ -28,8 +29,7 @@ export class CampaignController {
       const result = await this.syncCampaignsUseCase.execute(id);
       return reply.send({ data: { synced: result.length, accountId: id } });
     } catch (error) {
-      request.log.error(error);
-      return reply.status(500).send({ error: 'Failed to sync campaigns' });
+      return this.handleError(error, request, reply, 'Failed to sync campaigns');
     }
   }
 
@@ -42,8 +42,7 @@ export class CampaignController {
       const metrics = await this.getCampaignMetricsUseCase.execute(id);
       return reply.send({ data: metrics });
     } catch (error) {
-      request.log.error(error);
-      return reply.status(500).send({ error: 'Failed to get metrics' });
+      return this.handleError(error, request, reply, 'Failed to get metrics');
     }
   }
 
@@ -52,9 +51,37 @@ export class CampaignController {
       const result = await this.syncAllCampaignsUseCase.execute();
       return reply.send({ data: result });
     } catch (error) {
-      request.log.error(error);
-      return reply.status(500).send({ error: 'Failed to sync all campaigns' });
+      return this.handleError(error, request, reply, 'Failed to sync all campaigns');
     }
+  }
+
+  private handleError(
+    error: unknown,
+    request: FastifyRequest,
+    reply: FastifyReply,
+    defaultMessage: string
+  ) {
+    request.log.error({ err: error }, 'Controller error');
+
+    // Si es AppError, usar su statusCode
+    if (error instanceof AppError) {
+      return reply.status(error.statusCode).send({
+        error: {
+          message: error.message,
+          code: error.code,
+          statusCode: error.statusCode,
+          ...(error.details && { details: error.details }),
+        },
+      });
+    }
+
+    // Error desconocido - 500
+    return reply.status(500).send({
+      error: {
+        message: defaultMessage,
+        statusCode: 500,
+      },
+    });
   }
 }
 

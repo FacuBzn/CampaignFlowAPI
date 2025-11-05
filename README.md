@@ -99,6 +99,9 @@ npm run prisma:generate
 
 # Ejecutar migraciones (crea las tablas)
 npm run prisma:migrate
+
+# Poblar la base de datos con datos iniciales (seed)
+npm run prisma:seed
 ```
 
 **Nota**: Cuando ejecutes `prisma:migrate`, se te pedirá un nombre para la migración. Puedes usar `init` o `initial_schema`.
@@ -135,6 +138,167 @@ curl http://localhost:3000/health
 Abre tu navegador en: `http://localhost:3000/docs`
 
 Swagger UI te permitirá probar todos los endpoints interactivamente.
+
+#### 9. **Visualizar y Gestionar la Base de Datos**
+
+**✅ Confirmación: Este proyecto usa Prisma ORM**
+
+El schema de Prisma está en: `src/infrastructure/database/prisma/schema.prisma`
+
+##### Opción 1: Prisma Studio (Recomendado - GUI Visual)
+
+Prisma Studio es una interfaz gráfica oficial de Prisma que te permite ver y editar datos directamente.
+
+```bash
+# Iniciar Prisma Studio
+npm run prisma:studio
+
+# Esto abrirá automáticamente en tu navegador:
+# http://localhost:5555
+```
+
+**Características:**
+- ✅ Interfaz visual moderna
+- ✅ Ver todas las tablas (Account, Campaign)
+- ✅ Editar datos directamente
+- ✅ Filtrar y buscar registros
+- ✅ Crear nuevos registros
+- ✅ Ver relaciones entre tablas
+
+##### Opción 2: psql (Línea de Comandos)
+
+```bash
+# Conectar a la base de datos usando psql
+# Windows (si tienes PostgreSQL instalado):
+psql -U postgres -d meta_backend -h localhost -p 5432
+
+# O desde Docker:
+docker exec -it campaignflow-postgres psql -U postgres -d meta_backend
+
+# Comandos útiles:
+\dt                    # Listar todas las tablas
+\d Account             # Ver estructura de la tabla Account
+\d Campaign            # Ver estructura de la tabla Campaign
+SELECT * FROM "Account";    # Ver todos los registros de Account
+SELECT * FROM "Campaign";   # Ver todos los registros de Campaign
+\q                     # Salir
+```
+
+##### Opción 3: pgAdmin (GUI Completa)
+
+**pgAdmin** es una herramienta gráfica completa para PostgreSQL.
+
+1. Descarga desde: https://www.pgadmin.org/download/
+2. Instala pgAdmin 4
+3. Crea una nueva conexión:
+   - **Host**: `localhost`
+   - **Port**: `5432`
+   - **Database**: `meta_backend`
+   - **Username**: `postgres`
+   - **Password**: `postgres`
+
+##### Opción 4: DBeaver (Multi-Database GUI)
+
+**DBeaver** es un cliente SQL universal que funciona con múltiples bases de datos.
+
+1. Descarga desde: https://dbeaver.io/download/
+2. Instala DBeaver Community Edition
+3. Crea una nueva conexión PostgreSQL:
+   - **Host**: `localhost`
+   - **Port**: `5432`
+   - **Database**: `meta_backend`
+   - **Username**: `postgres`
+   - **Password**: `postgres`
+
+##### Opción 5: TablePlus (GUI Moderna - macOS/Windows)
+
+**TablePlus** es una herramienta moderna y elegante para bases de datos.
+
+1. Descarga desde: https://tableplus.com/
+2. Instala TablePlus
+3. Crea una nueva conexión PostgreSQL con las mismas credenciales
+
+##### Estructura de la Base de Datos
+
+**Tabla: `Account`**
+- `id`: String (UUID o acct1-acct5)
+- `name`: String (max 255 caracteres)
+- `createdAt`: DateTime
+- `updatedAt`: DateTime
+- Relación: Un Account tiene muchas Campaigns (1:N)
+
+**Tabla: `Campaign`**
+- `id`: String (UUID)
+- `name`: String (max 255 caracteres)
+- `status`: CampaignStatus (ACTIVE, PAUSED, DELETED, ARCHIVED)
+- `spend`: Decimal(10,2) - Gasto actual
+- `budget`: Decimal(10,2) - Presupuesto
+- `accountId`: String (Foreign Key a Account)
+- `createdAt`: DateTime
+- `updatedAt`: DateTime
+- Índices: `accountId`, `status`
+
+##### Queries Útiles
+
+```sql
+-- Ver todas las cuentas
+SELECT * FROM "Account" ORDER BY "createdAt" DESC;
+
+-- Ver todas las campañas con su cuenta
+SELECT 
+  c.id,
+  c.name,
+  c.status,
+  c.spend,
+  c.budget,
+  a.name AS account_name
+FROM "Campaign" c
+JOIN "Account" a ON c."accountId" = a.id
+ORDER BY c."createdAt" DESC;
+
+-- Contar campañas por cuenta
+SELECT 
+  a.id,
+  a.name,
+  COUNT(c.id) AS total_campaigns,
+  SUM(c.spend) AS total_spend,
+  SUM(c.budget) AS total_budget
+FROM "Account" a
+LEFT JOIN "Campaign" c ON a.id = c."accountId"
+GROUP BY a.id, a.name;
+
+-- Ver campañas activas
+SELECT * FROM "Campaign" 
+WHERE status = 'ACTIVE' 
+ORDER BY spend DESC;
+```
+
+##### Comandos Prisma Útiles
+
+```bash
+# Generar Prisma Client (después de cambiar schema)
+npm run prisma:generate
+
+# Crear nueva migración (después de cambiar schema)
+npm run prisma:migrate
+
+# Aplicar migraciones en producción
+npm run prisma:migrate:deploy
+
+# Abrir Prisma Studio (GUI visual)
+npm run prisma:studio
+
+# Ejecutar seed (poblar datos iniciales)
+npm run prisma:seed
+
+# Ver formato del schema
+npx prisma format --schema=./src/infrastructure/database/prisma/schema.prisma
+
+# Validar schema
+npx prisma validate --schema=./src/infrastructure/database/prisma/schema.prisma
+```
+
+**Para más detalles, consulta la guía completa en `GUIA_DATABASE.md`**
 
 ### Production Build
 
@@ -184,6 +348,9 @@ http://localhost:3000/docs
 - `npm run test:integration` - Run integration tests only
 - `npm run prisma:generate` - Generate Prisma client
 - `npm run prisma:migrate` - Run database migrations
+- `npm run prisma:migrate:deploy` - Deploy migrations in production
+- `npm run prisma:studio` - Open Prisma Studio (database GUI)
+- `npm run prisma:seed` - Seed database with initial data
 
 ## Testing
 

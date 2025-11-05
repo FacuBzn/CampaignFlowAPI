@@ -11,9 +11,13 @@
     "prisma:migrate": "prisma migrate dev --schema=./src/infrastructure/database/prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema=./src/infrastructure/database/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=./src/infrastructure/database/prisma/schema.prisma",
+    "prisma:seed": "tsx src/infrastructure/database/prisma/seed.ts",
     "test": "vitest",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration"
+  },
+  "prisma": {
+    "seed": "tsx src/infrastructure/database/prisma/seed.ts"
   },
   "keywords": [
     "fastify",

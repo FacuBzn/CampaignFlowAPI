@@ -344,5 +344,3 @@ El proyecto está **listo para desarrollo y testing**, pero requiere mejoras de 
 
 ---
 
-**Última actualización:** Enero 2025
-

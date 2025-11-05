@@ -17,16 +17,40 @@ export interface SyncAllResult {
 export class SyncAllCampaignsUseCase {
   private accountRepository: IAccountRepository;
   private syncCampaignsUseCase: SyncCampaignsUseCase;
+  private readonly SYNC_TIMEOUT = Number(process.env.SYNC_ALL_TIMEOUT) || 300000; // 5 minutos default
 
   constructor(
     accountRepository?: IAccountRepository,
     syncCampaignsUseCase?: SyncCampaignsUseCase
   ) {
     this.accountRepository = accountRepository || DIContainer.getAccountRepository();
-    this.syncCampaignsUseCase = syncCampaignsUseCase || new SyncCampaignsUseCase();
+    this.syncCampaignsUseCase = syncCampaignsUseCase || DIContainer.getSyncCampaignsUseCase();
   }
 
   async execute(): Promise<SyncAllResult> {
+    // Crear timeout promise
+    const timeoutPromise = new Promise<SyncAllResult>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Sync operation timed out after ${this.SYNC_TIMEOUT}ms`));
+      }, this.SYNC_TIMEOUT);
+    });
+
+    // Race entre sync y timeout
+    try {
+      return await Promise.race([
+        this.executeSync(),
+        timeoutPromise,
+      ]);
+    } catch (error) {
+      // Si es timeout, retornar estado parcial
+      if (error instanceof Error && error.message.includes('timeout')) {
+        return this.getPartialResult();
+      }
+      throw error;
+    }
+  }
+
+  private async executeSync(): Promise<SyncAllResult> {
     // Get all accounts
     const accounts = await this.accountRepository.findAll();
 
@@ -37,7 +61,13 @@ export class SyncAllCampaignsUseCase {
 
     const results = await Promise.allSettled(syncPromises);
 
-    // Process results
+    return this.processResults(results, accounts);
+  }
+
+  private processResults(
+    results: PromiseSettledResult<Campaign[]>[],
+    accounts: Account[]
+  ): SyncAllResult {
     const syncResults: SyncAllResult['results'] = [];
     let succeeded = 0;
     let failed = 0;
@@ -65,6 +95,20 @@ export class SyncAllCampaignsUseCase {
       succeeded,
       failed,
       results: syncResults,
+    };
+  }
+
+  private getPartialResult(): SyncAllResult {
+    // Retornar estado indicando timeout
+    return {
+      total: 0,
+      succeeded: 0,
+      failed: 0,
+      results: [{
+        accountId: 'timeout',
+        status: 'failed',
+        error: 'Operation timed out',
+      }],
     };
   }
 }

@@ -2,8 +2,13 @@ import { FastifyInstance } from 'fastify';
 import { setupSwagger } from './infrastructure/config/fastify';
 import { accountRoutes } from './api/routes/account.routes';
 import { campaignRoutes } from './api/routes/campaign.routes';
+import { prisma } from './infrastructure/database/prisma/prismaClient';
+import { registerRequestIdMiddleware } from './infrastructure/middleware/request-id.middleware';
 
 export async function registerRoutes(server: FastifyInstance) {
+  // Registrar middleware de request ID primero
+  await registerRequestIdMiddleware(server);
+
   // Setup Swagger documentation
   await setupSwagger(server);
 
@@ -50,17 +55,21 @@ export async function registerRoutes(server: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const { prisma } = await import('./infrastructure/database/prisma/prismaClient');
-    
     let dbStatus = 'connected';
     let dbError: string | undefined;
 
     try {
-      await prisma.$queryRaw`SELECT 1`;
+      // Timeout para query de health check
+      await Promise.race([
+        prisma.$queryRaw`SELECT 1`,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database health check timeout')), 5000)
+        ),
+      ]);
     } catch (error) {
       dbStatus = 'disconnected';
       dbError = error instanceof Error ? error.message : 'Unknown error';
-      request.log.error('Database health check failed:', error);
+      request.log.error({ err: error }, 'Database health check failed');
     }
 
     const healthStatus = {
